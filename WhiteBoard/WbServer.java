@@ -17,7 +17,7 @@ public interface WbServer extends java.rmi.Remote {
 
     boolean transferWhiteBoard(String toServerURL, String boardName) throws java.rmi.RemoteException;
 
-    void recieveWhiteBoard(ABoard board) throws java.rmi.RemoteException;
+    boolean recieveWhiteBoard(ABoard board) throws java.rmi.RemoteException;
 }
 
 // -eof-

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>DIC: P1</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="dic-p1">DIC: P1</h1>
+<p><strong>Siddharth Yadav | 2016268</strong></p>
+<h2 id="new-functions">New functions</h2>
+<p>In this section, I've written the new functions that have been added to major files. This functions are present with documentation and their skeleton code(without error handling, try/catch and other unnecessary lines)</p>
+<h3 id="new-functions-in-serverimpl">New functions in ServerImpl</h3>
+<pre><code class="language-java"><div><span class="hljs-comment">/**
+     * This functions simply returns all the info about the current server in the form of a list of Aboard structure
+     *
+     * <span class="hljs-doctag">@return</span> A list of WhiteBoards present in the current server instance
+     * <span class="hljs-doctag">@throws</span> java.rmi.RemoteException
+     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Vector&lt;ABoard&gt; <span class="hljs-title">query</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> java.rmi.RemoteException </span>{
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.vBoards;
+    }
+
+    <span class="hljs-comment">/**
+     * This function is responsible for transferring WhiteBoard, :boardName, on this server
+     * to an new Server, :toServerURL.
+     * &lt;p&gt;
+     * First, it transfers all the information about :boardName to :toServerURL.
+     * Then, it asks each client of :boardName to reconnect to the :toServerURL.
+     *
+     * <span class="hljs-doctag">@param</span> toServerURL the RMI URL of the server to which we need to transfer the WhiteBoard
+     * <span class="hljs-doctag">@param</span> boardName   The name of the WhiteBoard that needs to be transferred
+     * <span class="hljs-doctag">@return</span> true, if transfer is completely successful. it returns false, even if one of the client was unable to update its server
+     * <span class="hljs-doctag">@throws</span> java.rmi.RemoteException
+     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">transferWhiteBoard</span><span class="hljs-params">(String toServerURL, String boardName)</span> <span class="hljs-keyword">throws</span> java.rmi.RemoteException </span>{
+
+        <span class="hljs-comment">// find the WhiteBoard with name boardName on this server</span>
+        ABoard board = findAboard(boardName);
+        
+        <span class="hljs-comment">// connect with the new server to which we need to tranfer board</span>
+        WbServer toWbServer = (WbServer) Invoke.lookup(toServerURL);
+
+        <span class="hljs-comment">// send info the board to the new server :toWbServer</span>
+				toWbServer.recieveWhiteBoard(board);
+
+        <span class="hljs-keyword">boolean</span> success = <span class="hljs-keyword">true</span>;
+
+        <span class="hljs-comment">// ask all the client of :boardName to update their server to the new server, :toServerURL</span>
+        <span class="hljs-keyword">for</span> (WbClient wbClient : board.vClients) {
+                <span class="hljs-keyword">boolean</span> result = wbClient.updateServer(toServerURL); 
+        }
+
+        <span class="hljs-comment">// finally remove board from the current server</span>
+        <span class="hljs-keyword">this</span>.vBoards.remove(board);
+
+        <span class="hljs-keyword">return</span> success;
+    }
+
+    <span class="hljs-comment">/**
+     * This function is responsible for receiving a new WhiteBoard.
+     * It updates the current list of boards.
+     *
+     * <span class="hljs-doctag">@param</span> board :ABoard: the new board this server is going to receive
+     * <span class="hljs-doctag">@return</span> true if successfully updated, false if whiteboard with same name is already present in this server
+     * <span class="hljs-doctag">@throws</span> java.rmi.RemoteException
+     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">recieveWhiteBoard</span><span class="hljs-params">(ABoard board)</span> <span class="hljs-keyword">throws</span> java.rmi.RemoteException </span>{
+
+        <span class="hljs-comment">// we need to remove all the previous clients information</span>
+        <span class="hljs-comment">// the previous server will ask all the clients to addClient to this new Server</span>
+        board.vClients.removeAllElements();
+
+        <span class="hljs-comment">// finally add the board to the list of boards handled by the this server</span>
+        <span class="hljs-keyword">this</span>.vBoards.add(board);
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+    }
+</div></code></pre>
+<h3 id="new-functions-in-clientiml">New functions in ClientIml</h3>
+<pre><code class="language-java"><div><span class="hljs-comment">/**
+     * WbClient maintains an object of the server, this.wbServer, it's connected. We need to update this.wbServer
+     * whenever, we transfer the whiteboard this client is concerned with to a different server, newServerURL.
+     *
+     * This function updates all the properties of the client related to the server it's connected to.
+     * After that update, it asks the new server to add itself as a client.
+     *
+     * <span class="hljs-doctag">@param</span> newServerURL the RMI URL of the new server it needs to connect to
+     * <span class="hljs-doctag">@return</span> true, if connection to the new server was succesfull
+     * <span class="hljs-doctag">@throws</span> java.rmi.RemoteException
+     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">updateServer</span><span class="hljs-params">(String newServerURL)</span> <span class="hljs-keyword">throws</span> java.rmi.RemoteException </span>{
+
+        <span class="hljs-comment">// try to connect to the new server</span>
+        WbServer newWebServer = (WbServer) Invoke.lookup(newServerURL);
+
+        <span class="hljs-comment">// update properties of current client</span>
+        <span class="hljs-keyword">this</span>.myServerURL = newServerURL;
+        <span class="hljs-keyword">this</span>.wbServer = newWebServer;
+
+        <span class="hljs-comment">// finally ask the new server to add this client to it</span>
+        <span class="hljs-keyword">this</span>.wbServer.addClient(<span class="hljs-keyword">this</span>, <span class="hljs-keyword">this</span>.myBoardNm);
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+    }
+</div></code></pre>
+<h2 id="assertions">Assertions</h2>
+<p>I've followerd a strict error checking to make sure I don't have to use many assertions.
+The error checking can be seen in the code present in <code>WbServerImpl.java</code> and <code>WbClientImpl.java</code>.
+I've added new code at the bottom.</p>
+<p>But I've added a few assertions for sake of it.</p>
+<pre><code class="language-java"><div>WhiteBoard ) grep -A <span class="hljs-number">2</span> <span class="hljs-string">"assert"</span> *.java
+WbClientImpl.java:        <span class="hljs-keyword">assert</span> newServerURL != <span class="hljs-keyword">null</span> &amp;&amp; newServerURL.length() &gt; <span class="hljs-number">0</span>;
+WbClientImpl.java-        
+WbClientImpl.java-        <span class="hljs-comment">// try to connect to the new server</span>
+--
+WbClientImpl.java:        <span class="hljs-keyword">assert</span> newWebServer != <span class="hljs-keyword">null</span>;
+WbClientImpl.java-
+WbClientImpl.java-        <span class="hljs-comment">// update properties of current client</span>
+--
+WbServerImpl.java:        <span class="hljs-keyword">assert</span> <span class="hljs-keyword">this</span>.vBoards != <span class="hljs-keyword">null</span>;
+WbServerImpl.java-
+WbServerImpl.java-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.vBoards;
+--
+WbServerImpl.java:        <span class="hljs-keyword">assert</span> toServerURL != <span class="hljs-keyword">null</span> &amp;&amp; toServerURL.length() &gt; <span class="hljs-number">0</span> &amp;&amp; boardName != <span class="hljs-keyword">null</span>;
+WbServerImpl.java-
+WbServerImpl.java:        <span class="hljs-keyword">int</span> assert_board_num = vBoards.size(); <span class="hljs-comment">// for assertion use later</span>
+WbServerImpl.java-
+WbServerImpl.java-        <span class="hljs-comment">// find the WhiteBoard with name boardName on this server</span>
+--
+WbServerImpl.java:        <span class="hljs-keyword">assert</span> assert_board_num - <span class="hljs-number">1</span> == vBoards.size();
+WbServerImpl.java-
+WbServerImpl.java-        <span class="hljs-keyword">return</span> success;
+--
+WbServerImpl.java:        <span class="hljs-keyword">assert</span> board != <span class="hljs-keyword">null</span>; 
+WbServerImpl.java:        <span class="hljs-keyword">int</span> assert_board_num = vBoards.size(); <span class="hljs-comment">// for future assertion</span>
+WbServerImpl.java-
+WbServerImpl.java-        <span class="hljs-keyword">if</span> (findAboard(board.boardName) != <span class="hljs-keyword">null</span>) {
+--
+WbServerImpl.java:        <span class="hljs-keyword">assert</span> assert_board_num + <span class="hljs-number">1</span> == vBoards.size();
+WbServerImpl.java-
+WbServerImpl.java-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+
+</div></code></pre>
+<h2 id="screenshots">Screenshots</h2>
+<h3 id="wb7370run"><code>wb7370run</code></h3>
+<p><img src="file:////home/sid/Study/sems/sem8/dic/ass/WhiteBoard/images/Untitled.png" alt="images/Untitled.png"></p>
+<p>wb7370run example 1</p>
+<p><img src="file:////home/sid/Study/sems/sem8/dic/ass/WhiteBoard/images/Untitled%201.png" alt="images/Untitled%201.png"></p>
+<p>wb7370run example 2</p>
+<h3 id="query"><code>query</code></h3>
+<p><img src="file:////home/sid/Study/sems/sem8/dic/ass/WhiteBoard/images/Untitled%202.png" alt="images/Untitled%202.png"></p>
+<p>query example 1</p>
+<p><img src="file:////home/sid/Study/sems/sem8/dic/ass/WhiteBoard/images/Untitled%203.png" alt="images/Untitled%203.png"></p>
+<p>query example 2</p>
+<h3 id="transfer"><code>transfer</code></h3>
+<p>Here's we are transferring whiteboard <code>b0</code> from server <code>S1</code> to server <code>S2</code>.
+<code>transfer</code> is successful which is followed by printing the state of the old and new servers right after the transfer.</p>
+<p>after <code>transfer</code>, I add lines to each board and then run query for each server to show that transfer has been done properly</p>
+<p><img src="file:////home/sid/Study/sems/sem8/dic/ass/WhiteBoard/images/Untitled%204.png" alt="images/Untitled%204.png"></p>
+<p>transfer b0 from S1 to S2 → add lines to b0 and b1 → query S1 → query S2</p>
+<p>Here's we are transferring whiteboard <code>b0</code> from server <code>S2</code> to server <code>S1</code>. (Opposite as above)</p>
+<p><img src="file:////home/sid/Study/sems/sem8/dic/ass/WhiteBoard/images/Untitled%205.png" alt="images/Untitled%205.png"></p>
+<p>transfer b0 from S2 to S1 → add lines to b0 and b1 → query S1</p>
+
+    </body>
+    </html>

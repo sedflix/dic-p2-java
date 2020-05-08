@@ -14,7 +14,7 @@ public interface WbClient
 
     void recvDisplayObj(LinesFrame f) throws java.rmi.RemoteException;
 
-    void updateServer(String newServerURL) throws java.rmi.RemoteException;
+    boolean updateServer(String newServerURL) throws java.rmi.RemoteException;
 }
 
 // -eof-

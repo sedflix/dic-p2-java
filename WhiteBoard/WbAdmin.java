@@ -30,27 +30,46 @@ public class WbAdmin {
         Invoke.javaVM('C', args);
     }
 
+    // transfer request
     private void transferReq() {
-        String []args = Invoke.promptAndGet("ServelURL WhiteBoardName NewServerURL").split(" ");
+        String[] args = Invoke.promptAndGet("ServelURL WhiteBoardName NewServerURL").split(" ");
         WbServer wbServer = (WbServer) Invoke.lookup(args[0]);
         try {
-             boolean result = wbServer.transferWhiteBoard(args[2], args[1]);
-             System.out.println("Transfer: " + result);
+            boolean result = wbServer.transferWhiteBoard(args[2], args[1]);
+            System.out.println("Transfer: " + result);
+            System.out.println("Old Server State: ");
+            query(args[0]);
+            System.out.println("New Server State: ");
+            query(args[2]);
         } catch (Exception e) {
-           e.printStackTrace();
-           System.out.println("Transfer failed");
+            e.printStackTrace();
+            System.out.println("Transfer failed");
+        }
+    }
+    
+    private void printQueryInfo(String serverURL, Vector<ABoard> vBoards) {
+        StringBuilder str = new StringBuilder("WbServerImpl{ myURL='" + serverURL + "'}\n");
+        for (ABoard board : vBoards) {
+            str.append("board name : '").append(board.boardName).append("'\n");
+            str.append("\t total numbers of clients : ").append(board.vClients.size()).append("\n");
+            str.append("\t total numbers of lines : ").append(board.vLines.size()).append("\n");
+        }
+        System.out.println(str);
+    }
+
+    private void query(String serverURL) {
+        WbServer wbServer = (WbServer) Invoke.lookup(serverURL);
+        try {
+            Vector<ABoard> vBoards = wbServer.query();
+            printQueryInfo(serverURL, vBoards);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private void queryReq() {
         String args = Invoke.promptAndGet("ServelURL");
-        WbServer wbServer = (WbServer) Invoke.lookup(args);
-        try {
-            Vector<ABoard>  list = wbServer.query();
-            list.forEach( x -> { System.out.println("Board Name: " + x.boardName + "\t Number of Clients: " + x.vClients.size());});
-        } catch (Exception e) {
-           e.printStackTrace();
-        }
+        query(args);
     }
 
     private void userInteract() {

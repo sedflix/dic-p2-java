@@ -23,7 +23,7 @@ public class WbClientImpl extends java.rmi.server.UnicastRemoteObject implements
 
     /**
      * This is the main client program. It invokes LinesFrameImpl internally for the GUI.
-     *
+     * <p>
      * Example Invocation: hava WhiteBoard.WbClientImpl 22 b0 localhost //localhost/S1 FF0000
      *
      * @param args clientId, brdNm, displayMcnm, wbserverURL, color
@@ -117,11 +117,44 @@ public class WbClientImpl extends java.rmi.server.UnicastRemoteObject implements
         System.exit(0);
     }
 
-    public void updateServer(String newServerURL) throws java.rmi.RemoteException {
+    /**
+     * WbClient maintains an object of the server, this.wbServer, it's connected. We need to update this.wbServer
+     * whenever, we transfer the whiteboard this client is concerned with to a different server, newServerURL.
+     *
+     * This function updates all the properties of the client related to the server it's connected to.
+     * After that update, it asks the new server to add itself as a client.
+     *
+     * @param newServerURL the RMI URL of the new server it needs to connect to
+     * @return true, if connection to the new server was succesfull
+     * @throws java.rmi.RemoteException
+     */
+    public boolean updateServer(String newServerURL) throws java.rmi.RemoteException {
+
+        // make sure that inputs are not null
+        assert newServerURL != null && newServerURL.length() > 0;
+        
+        // try to connect to the new server
+        WbServer newWebServer = (WbServer) Invoke.lookup(newServerURL);
+        if (newWebServer == null) {
+            System.err.printf("Client: '%s' unable to connect to the new server: '%s'\n", this.myURL, newServerURL);
+            return false;
+        }
+
+        assert newWebServer != null;
+
+        // update properties of current client
         this.myServerURL = newServerURL;
-        this.wbServer = (WbServer) Invoke.lookup(newServerURL);
-        this.wbServer.addClient(this, this.myBoardNm);
-        return;
+        this.wbServer = newWebServer;
+
+        // finally ask the new server to add this client to it
+        try {
+            this.wbServer.addClient(this, this.myBoardNm);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
     }
 }
 
