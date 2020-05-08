@@ -31,11 +31,26 @@ public class WbAdmin {
     }
 
     private void transferReq() {
-        // Transfer a white board to a new server. For you TODO
+        String []args = Invoke.promptAndGet("ServelURL WhiteBoardName NewServerURL").split(" ");
+        WbServer wbServer = (WbServer) Invoke.lookup(args[0]);
+        try {
+             boolean result = wbServer.transferWhiteBoard(args[2], args[1]);
+             System.out.println("Transfer: " + result);
+        } catch (Exception e) {
+           e.printStackTrace();
+           System.out.println("Transfer failed");
+        }
     }
 
     private void queryReq() {
-        // Query for inforamtion from each server. For you TODO
+        String args = Invoke.promptAndGet("ServelURL");
+        WbServer wbServer = (WbServer) Invoke.lookup(args);
+        try {
+            Vector<ABoard>  list = wbServer.query();
+            list.forEach( x -> { System.out.println("Board Name: " + x.boardName + "\t Number of Clients: " + x.vClients.size());});
+        } catch (Exception e) {
+           e.printStackTrace();
+        }
     }
 
     private void userInteract() {

@@ -13,6 +13,8 @@ public interface WbClient
     void pleaseDie() throws java.rmi.RemoteException;
 
     void recvDisplayObj(LinesFrame f) throws java.rmi.RemoteException;
+
+    void updateServer(String newServerURL) throws java.rmi.RemoteException;
 }
 
 // -eof-

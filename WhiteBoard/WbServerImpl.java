@@ -2,6 +2,7 @@
 
 package WhiteBoard;
 
+import java.io.Serializable;
 import java.rmi.Naming;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Enumeration;
@@ -9,7 +10,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
 
-class ABoard {
+import sun.net.www.content.audio.basic;
+
+class ABoard implements Serializable {
     String boardName;        // Name of this board
     Vector<LineCoords> vLines;    // all lines on this board
     Vector<WbClient> vClients;    // all clients on this board
@@ -127,6 +130,48 @@ public class WbServerImpl
                 x.printStackTrace();
             }
         }
+    }
+
+    public Vector<ABoard> query() throws java.rmi.RemoteException{
+        return this.vBoards;
+    }
+
+    public boolean transferWhiteBoard(String toServerURL, String boardName) throws java.rmi.RemoteException {
+
+        ABoard board = findAboard(boardName);
+
+        WbServer toWbServer = (WbServer) Invoke.lookup(toServerURL);
+        if (toWbServer == null) 
+            return false;
+
+        try {
+            toWbServer.recieveWhiteBoard(board);
+        } catch (Exception e) {
+           e.printStackTrace();
+           return false;
+        }
+
+        for (WbClient wbClient: board.vClients) {
+            try {
+                wbClient.updateServer(toServerURL);
+            } catch (Exception e) {
+               e.printStackTrace();
+               return false;
+            }
+        }
+
+        this.vBoards.remove(board);
+
+        return true;
+    }
+
+    public void recieveWhiteBoard(ABoard board) throws java.rmi.RemoteException {
+        
+        board.vClients.removeAllElements();
+        this.vBoards.add(board);
+
+        return;
+
     }
 }
 

@@ -51,6 +51,11 @@ public class LinesFrameImpl
         }
     };
 
+    /**
+     *
+     * @param args [myId, bnm, displayMcnm, clientMcnm, clientId]
+     * @throws Exception
+     */
     public LinesFrameImpl(String[] args) throws Exception {
         // args = [myId, bnm, displayMcnm, clientMcnm, clientId]
         super();

@@ -7,29 +7,53 @@ import java.rmi.Naming;
 
 public class WbClientImpl extends java.rmi.server.UnicastRemoteObject implements WbClient {
 
-    private final WbServer wbServer;
-    private final String thisMcnm;
-    private final String myBoardNm;
-    private final String myURL;
-    private final String myServerURL;
-    private final Color myColor;
-    private LinesFrame myLinesFrame;
+    // Server Info
+    private WbServer wbServer; // Server proxy object (RMI)
+    private String myServerURL; // thi RMI URL of this server
 
+    // Info the GUI
+    private LinesFrame myLinesFrame; // LinesFrameImpl proxy oject (RMI)
+
+    // This client config
+    private final String thisMcnm; // the name of this machine
+    private final String myBoardNm; // the nae of this whiteboard
+    private final String myURL; // the RMI URL of this client
+    private final Color myColor; // the color of the line in this whiteboard
+
+
+    /**
+     * This is the main client program. It invokes LinesFrameImpl internally for the GUI.
+     *
+     * Example Invocation: hava WhiteBoard.WbClientImpl 22 b0 localhost //localhost/S1 FF0000
+     *
+     * @param args clientId, brdNm, displayMcnm, wbserverURL, color
+     * @throws Exception
+     */
     public WbClientImpl(String[] args) throws Exception {
         // args = [clientId, brdNm, displayMcnm, wbserverURL, color]
         super();
 
-        myBoardNm = args[1];
-        myURL = Invoke.makeURL('C', args[0]);
+        this.myBoardNm = args[1];
+
+        //
+        this.myURL = Invoke.makeURL('C', args[0]);
         Naming.rebind(myURL, this);
         Invoke.myPrint("WbClientImpl", "did Naming.rebind " + myURL);
 
-        thisMcnm = java.net.InetAddress.getLocalHost().getHostName();
+        //
+        this.thisMcnm = java.net.InetAddress.getLocalHost().getHostName();
+
+        //
         makeMyLinesFrame(args);
-        myServerURL = args[3];
-        wbServer = (WbServer) Invoke.lookup(myServerURL);
-        myColor = new Color(Integer.parseInt(args[4], 16));
+
+        //
+        this.myServerURL = args[3];
+        this.wbServer = (WbServer) Invoke.lookup(myServerURL);
+
+        //
+        this.myColor = new Color(Integer.parseInt(args[4], 16));
         Invoke.myPrint("WbClient waiting for", "recvDisplayObj");
+
         // addClient() occurs in recvDisplayObj()
     }
 
@@ -41,7 +65,12 @@ public class WbClientImpl extends java.rmi.server.UnicastRemoteObject implements
         }
     }
 
-    // create our lines frame process, which will do recvDisplayObj()
+    /**
+     * Starts LinesFrameImpl class. This handles the GUI and calls the addClient function
+     *
+     * @param args [myId, bnm, displayMcnm, clientMcnm, clientId]
+     * @throws Exception
+     */
     private void makeMyLinesFrame(String[] args) throws Exception {
         Invoke.javaVM
                 ('L', args[1] + " " + args[2] + " " + thisMcnm + " " + args[0]);
@@ -86,6 +115,13 @@ public class WbClientImpl extends java.rmi.server.UnicastRemoteObject implements
         }
         Invoke.myPrint("WbClient ", myURL + " exits");
         System.exit(0);
+    }
+
+    public void updateServer(String newServerURL) throws java.rmi.RemoteException {
+        this.myServerURL = newServerURL;
+        this.wbServer = (WbServer) Invoke.lookup(newServerURL);
+        this.wbServer.addClient(this, this.myBoardNm);
+        return;
     }
 }
 

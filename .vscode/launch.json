@@ -1,0 +1,54 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Server1",
+            "request": "launch",
+            "mainClass": "WhiteBoard.WbServerImpl",
+            // "preLaunchTask": "build",
+            "args": [
+                "1",
+                "localhost"
+            ],
+            "console": "internalConsole"
+        },
+        {
+            "type": "java",
+            "name": "Client1",
+            "request": "launch",
+            "mainClass": "WhiteBoard.WbClientImpl",
+            "args": [
+                "1",
+                "b0",
+                "localhost",
+                "//localhost/S1",
+                "FF0000"
+            ],
+            "console": "internalConsole"
+        },
+        {
+            "type": "java",
+            "name": "Client2",
+            "request": "launch",
+            "mainClass": "WhiteBoard.WbClientImpl",
+            "args": [
+                "2",
+                "b0",
+                "localhost",
+                "//localhost/S1",
+                "00FF00"
+            ],
+            "console": "internalConsole"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Server/Client-1", 
+            "configurations": ["Server1","Client1", "Client2"]
+        }
+    ]
+}

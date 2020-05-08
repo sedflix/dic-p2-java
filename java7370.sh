@@ -1,3 +1,4 @@
+#! /bin/bash
 # source this @file java7370.sh, as in 
 # source java-env.sh
 #
